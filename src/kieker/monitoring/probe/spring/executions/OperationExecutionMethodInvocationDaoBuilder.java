@@ -14,6 +14,8 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.AopProxy;
+import org.springframework.aop.framework.ReflectiveMethodInvocation;
 
 public class OperationExecutionMethodInvocationDaoBuilder {
 	
@@ -29,11 +31,13 @@ public class OperationExecutionMethodInvocationDaoBuilder {
 		
 		try {
 			
-			String id = invocation.getMethod().getDeclaringClass().getName() + "." + invocation.getMethod().getName();
+			String id = (((ReflectiveMethodInvocation)invocation).targetClass).getInterfaces()[0].getName() + "." + invocation.getMethod().getName();
 			
 			Configuration conf4DaoXml = sqlSessionFactoryBean.getConfiguration();
 			
-			String sql = conf4DaoXml.getMappedStatement(id).getSqlSource().getBoundSql(null).getSql();
+			Object parameter = invocation.getArguments() != null && invocation.getArguments().length > 0 ? invocation.getArguments()[0] : null;
+			
+			String sql = conf4DaoXml.getMappedStatement(id).getSqlSource().getBoundSql(parameter).getSql();
 			
 			String sqlId = assembleSqlId(conf4DaoXml.getMappedStatement(id).getResource(), 
 					conf4DaoXml.getMappedStatement(id).getId());
@@ -58,30 +62,39 @@ public class OperationExecutionMethodInvocationDaoBuilder {
 		
 		sql = sql.toLowerCase().replaceAll("\n", " ");
 		
-		String regex = "from\\s+(.*)\\s+where?";
+		String[] regexs = {"from\\s+(.*)\\s+where?", "update\\s+(.*)\\s+set", "delete from\\s+(.*)\\s+where"};//, "insert into\\s+(.*)\\("};
 		
-		Pattern pattern = Pattern.compile(regex);
-		
-		Matcher matcher = pattern.matcher(sql);
-		
-		while (matcher.find()) {
+		for (String regex : regexs) {
 			
-			String tname = matcher.group(1);
+			Pattern pattern = Pattern.compile(regex);
 			
-			String[] sps1 = tname.trim().split(",");
+			Matcher matcher = pattern.matcher(sql);
 			
-			for (String sp1 : sps1) {
+			while (matcher.find()) {
 				
-				String[] sps2 = sp1.trim().split("join");
+				String tname = matcher.group(1);
 				
-				for (String sp2 : sps2) {
+				String[] sps1 = tname.trim().split(",");
+				
+				for (String sp1 : sps1) {
 					
-					tableList.add(dataBaseName + "." + sp2.trim().split(" ")[0].toUpperCase());
+					String[] sps2 = sp1.trim().split("join");
+					
+					for (String sp2 : sps2) {
+						
+						tableList.add(dataBaseName + "." + sp2.trim().split(" ")[0].toUpperCase());
+						
+					}
 					
 				}
 				
 			}
 			
+		}
+		
+		if (sql.startsWith("insert into ")) {
+			
+			tableList.add(sql.substring("insert into ".length(), sql.indexOf("(")));
 		}
 		
 		return tableList;

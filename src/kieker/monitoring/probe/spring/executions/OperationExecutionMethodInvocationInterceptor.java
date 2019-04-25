@@ -25,6 +25,8 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.AopProxy;
+import org.springframework.aop.framework.ReflectiveMethodInvocation;
 
 import kieker.common.record.controlflow.OperationExecutionRecord;
 import kieker.monitoring.core.controller.IMonitoringController;
@@ -76,8 +78,6 @@ public class OperationExecutionMethodInvocationInterceptor implements MethodInte
 	 */
 	@Override
 	public Object invoke(final MethodInvocation invocation) throws Throwable { // NOCS (IllegalThrowsCheck)
-		
-		System.out.println("Hello kieker for Interceptor555555555555555555");
 		
 		if (!this.monitoringCtrl.isMonitoringEnabled()) {
 			return invocation.proceed();
@@ -206,7 +206,7 @@ public class OperationExecutionMethodInvocationInterceptor implements MethodInte
 	
 	private boolean isPersistentClassMethod(final MethodInvocation invocation) {
 		
-		Annotation[] annotations4Class = invocation.getMethod().getDeclaringClass().getAnnotations();
+		Annotation[] annotations4Class = (((ReflectiveMethodInvocation)invocation).targetClass).getInterfaces()[0].getAnnotations();
 		
 		for (Annotation anno : annotations4Class) {
 			
