@@ -42,7 +42,9 @@ public class OperationExecutionMethodInvocationDaoBuilder {
 			String sqlId = assembleSqlId(conf4DaoXml.getMappedStatement(id).getResource(), 
 					conf4DaoXml.getMappedStatement(id).getId());
 			
-			tableInfoMap.put(sqlId, parseTableNamesFromSql(sql));
+//			tableInfoMap.put(sqlId, parseTableNamesFromSql(sql));
+			
+			tableInfoMap.put(sqlId, CommonUtils.parseTableNamesFromSql(sql, getDataBaseName()));
 			
 		} catch (Exception e) {
 			
@@ -62,7 +64,7 @@ public class OperationExecutionMethodInvocationDaoBuilder {
 		
 		sql = sql.toLowerCase().replaceAll("\n", " ");
 		
-		String[] regexs = {"from\\s+(.*)\\s+where?", "update\\s+(.*)\\s+set", "delete from\\s+(.*)\\s+where"};//, "insert into\\s+(.*)\\("};
+		String[] regexs = {"\\s+from\\s+(.*)\\s+where?", "update\\s+(.*)\\s+set", "delete from\\s+(.*)\\s+where"};//, "insert into\\s+(.*)\\("};
 		
 		for (String regex : regexs) {
 			

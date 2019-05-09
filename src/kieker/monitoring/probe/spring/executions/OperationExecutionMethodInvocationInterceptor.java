@@ -121,8 +121,27 @@ public class OperationExecutionMethodInvocationInterceptor implements MethodInte
 			retval = invocation.proceed();
 		} finally {
 			final long tout = this.timeSource.getTime();
+			
+			String lable = signature;
+			
+			try {
+				
+				if (signature.toLowerCase().indexOf("cruddao") != -1) {
+					
+					lable = (((ReflectiveMethodInvocation)invocation).targetClass).getInterfaces()[0].getName() + "." + invocation.getMethod().getName();
+					
+				}
+				
+			} catch (Exception e) {
+				
+				lable = signature;
+				
+				e.printStackTrace();
+				
+			}
+			
 			this.monitoringCtrl.newMonitoringRecord(
-					new OperationExecutionRecord(signature, sessionId, traceId, tin, tout, NODE_TYPE_CLASS_FUNCTION, eoi, ess));
+					new OperationExecutionRecord(lable, sessionId, traceId, tin, tout, NODE_TYPE_CLASS_FUNCTION, eoi, ess));
 			
 			// record sql information: sql id, tableName.
 			recordSQLInfo4DaoInstance(invocation, ess + 1);
@@ -155,14 +174,21 @@ public class OperationExecutionMethodInvocationInterceptor implements MethodInte
 					
 					String sqlId = tableNameIterator.next();
 					
-					recordSQLTableInfo(NODE_TYPE_DATABASE_SQL, sqlId, parentNodeIndex);
+//					recordSQLTableInfo(NODE_TYPE_DATABASE_SQL, sqlId, parentNodeIndex);
 					
 					List<String> tableNameList = tableInfoMap.get(sqlId);
 					
-					for (String tableName : tableNameList) {
+					int tableParentSqlIndex = parentNodeIndex;// + 1;
+					
+					for (int i = 0; i < tableNameList.size(); i++) {
 						
-						recordSQLTableInfo(NODE_TYPE_DATABASE_SQL, tableName, parentNodeIndex + 1);
+						recordSQLTableInfo(NODE_TYPE_DATABASE_SQL, tableNameList.get(i), tableParentSqlIndex);
 						
+//						for (int j = i; j < tableNameList.size(); j++) {
+//							
+//							recordSQLTableInfo(NODE_TYPE_DATABASE_SQL, tableNameList.get(j), tableParentSqlIndex + 1);
+//							
+//						}
 					}
 					
 				}
